@@ -16,7 +16,8 @@
 const char *algorithm_names[] = {
     "DES", "NT", "MD5", "SHA256", "SHA512", "YESCRYPT", "GOST_YESCRYPT", "BCRYPT"};
 
-// Global variables for dynamic load balancing
+
+// load balanacing global variables
 int current_hash_index = 0;
 int hash_count;
 pthread_mutex_t index_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -33,7 +34,7 @@ int get_hash_algorithm(const char *hash);
 int get_next_hash_index(void);
 void *thread_function(void *arg);
 
-// Structure for thread arguments
+// Struct for thread arguments
 typedef struct
 {
     int thread_id;
@@ -47,7 +48,7 @@ typedef struct
     pthread_mutex_t *output_mutex;
 } ThreadArgs;
 
-// Function to determine the hash algorithm
+// easy way to find what to decode with
 int get_hash_algorithm(const char *hash)
 {
     if (hash[0] != '$')
@@ -88,7 +89,7 @@ int get_hash_algorithm(const char *hash)
     }
 }
 
-// Function to get the next hash index (dynamic load balancing)
+// dynamic load balancing
 int get_next_hash_index(void)
 {
     int index = -1;
@@ -102,7 +103,7 @@ int get_next_hash_index(void)
     return index;
 }
 
-// Function to parse input file and store hashes in a dynamically allocated array
+// what the func name says, parses input file
 int parse_input_file(const char *input_file, char ***hashes)
 {
     FILE *fp;
@@ -118,7 +119,7 @@ int parse_input_file(const char *input_file, char ***hashes)
         return -1;
     }
 
-    // Allocate memory for the array of hash strings
+    // Allocate mem
     *hashes = malloc(MAX_HASHES * sizeof(char *));
     if (!*hashes)
     {
@@ -127,13 +128,13 @@ int parse_input_file(const char *input_file, char ***hashes)
         return -1;
     }
 
-    // Read each line from the file
+    // Read 
     while (fgets(buffer, BUF_SIZE, fp) && count < MAX_HASHES)
     {
         // Remove the trailing newline character
         buffer[strcspn(buffer, "\n")] = '\0';
 
-        // Allocate memory for the hash and store it
+        // Allocate mem
         (*hashes)[count] = strdup(buffer);
         if (!(*hashes)[count])
         {
@@ -156,7 +157,6 @@ int parse_input_file(const char *input_file, char ***hashes)
     return count; // Return the number of hashes read
 }
 
-// Function to decrypt a hashed password using a dictionary and crypt_rn
 int decrypt_password(
     const char *hashed_password,
     FILE *dict_fp,
@@ -178,13 +178,11 @@ int decrypt_password(
         {
             if (verbose)
             {
-                // Do not need to lock here as it's per-thread
                 fprintf(stderr, "Verbose: Skipping empty plaintext line\n");
             }
             continue;
         }
 
-        // Clear crypt_data structure before each call
         memset(crypt_stuff, 0, sizeof(struct crypt_data));
 
         // Attempt to hash the plaintext password
@@ -201,16 +199,15 @@ int decrypt_password(
         // Check if the hashed value matches
         if (strcmp(hashed_password, result) == 0)
         {
-            *cracked_password = strdup(plain_text); // Save cracked plaintext
-            return 1;                               // Password successfully cracked
+            *cracked_password = strdup(plain_text); 
+            return 1;                               
         }
     }
 
     *cracked_password = NULL;
-    return 0; // Failed to crack password
+    return 0; 
 }
 
-// Thread function
 void *thread_function(void *arg)
 {
     ThreadArgs *args = (ThreadArgs *)arg;
@@ -225,12 +222,10 @@ void *thread_function(void *arg)
 
     memset(&crypt_stuff, 0, sizeof(struct crypt_data));
 
-    // Initialize per-thread statistics
     memset(args->alg_counts, 0, sizeof(args->alg_counts));
     args->total_processed = 0;
     args->total_failed = 0;
 
-    // Open the dictionary file for this thread
     dict_fp = fopen(args->dict_file, "r");
     if (!dict_fp)
     {
@@ -285,7 +280,6 @@ void *thread_function(void *arg)
     elapsed_time = ((end_time.tv_sec - start_time.tv_sec) * 1000000.0 + (end_time.tv_usec - start_time.tv_usec)) / 1000000.0;
     args->elapsed_time = elapsed_time;
 
-    // Output per-thread statistics to stderr
     pthread_mutex_lock(args->output_mutex);
     fprintf(stderr, "thread: %2d %8.2f sec", args->thread_id, elapsed_time);
     for (alg_index = 0; alg_index < 8; alg_index++)
@@ -405,10 +399,8 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    // Start total program timing
     gettimeofday(&program_start_time, NULL);
 
-    // Create threads
     for (i = 0; i < num_threads; i++)
     {
         thread_args[i].thread_id = i;
@@ -425,7 +417,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Wait for threads to finish
     for (i = 0; i < num_threads; i++)
     {
         pthread_join(threads[i], NULL);
@@ -443,7 +434,6 @@ int main(int argc, char *argv[])
         }
         total_processed += thread_args[i].total_processed;
         total_failed += thread_args[i].total_failed;
-        // Find the maximum elapsed time among threads
         if (thread_args[i].elapsed_time > max_elapsed_time)
         {
             max_elapsed_time = thread_args[i].elapsed_time;
@@ -460,7 +450,6 @@ int main(int argc, char *argv[])
     fprintf(stderr, "  total: %8d  failed: %8d\n", total_processed, total_failed);
     pthread_mutex_unlock(&output_mutex);
 
-    // Clean up
     if (output_fp != stdout)
     {
         fclose(output_fp);
