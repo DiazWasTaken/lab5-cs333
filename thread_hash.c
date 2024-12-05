@@ -199,10 +199,10 @@ int main(int argc, char *argv[]) {
         }
 
         if (decrypt_password(hashed_password, dict_fp, &cracked_password, &crypt_stuff, verbose)) {
-            fprintf(output_fp, "cracked: %s -> %s\n", hashed_password, cracked_password);
+            fprintf(output_fp, "cracked  %s  %s\n", cracked_password, hashed_password);
             free(cracked_password);
         } else {
-            fprintf(output_fp, "*** failed to crack: %s\n", hashed_password);
+            fprintf(output_fp, "*** failed to crack  %s\n", hashed_password);
         }
     }
 
