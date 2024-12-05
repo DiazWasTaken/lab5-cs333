@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/time.h>
+#include <bits/getopt_core.h>
 
 #define BUF_SIZE 1024
 #define MAX_HASHES 20000
